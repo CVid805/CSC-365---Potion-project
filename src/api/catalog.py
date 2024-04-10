@@ -13,8 +13,8 @@ def get_catalog():
     """
     with db.engine.begin() as connection:
         numGreenPotions = connection.execute(sqlalchemy.text("SELECT num_green_potions FROM global_inventory")).scalar()
-        if numGreenPotions is None:
-            numGreenPotions = 0
+        if numGreenPotions == 0:
+            numGreenPotions = []
         else:
             numGreenPotions = 1
 
