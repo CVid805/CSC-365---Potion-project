@@ -54,10 +54,12 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
        
         if(numGreenPotions < 10) :
             greenInv = 1
+        else:
+            return []
         
     return [
         {
-            "sku": "SMALL_GREEN_BARREL",
+            "sku": wholesale_catalog(Barrel).sku,
             "quantity": greenInv,
         }
     ]

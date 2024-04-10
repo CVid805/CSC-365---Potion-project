@@ -54,6 +54,8 @@ def get_bottle_plan():
             ml_to_bot += 1
             numGreenMl -= 100
             
+        if ml_to_bot == 0:
+            return []
 
     return [
             {
