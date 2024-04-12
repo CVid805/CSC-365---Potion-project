@@ -84,11 +84,16 @@ def post_visits(visit_id: int, customers: list[Customer]):
 
     return "OK"
 
+global_cart_ids = 0
+global_cart = {}
 
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
-    return {"cart_id": 1}
+
+    global_cart_ids += 1
+
+    return {"cart_id": global_cart_ids}
 
 
 class CartItem(BaseModel):
@@ -98,7 +103,8 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
-
+    global_cart[global_cart_ids] = item_sku
+    # I want to buy a red a green or a blue
     return "OK"
 
 
