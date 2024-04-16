@@ -5,6 +5,7 @@ from enum import Enum
 
 import sqlalchemy
 from src import database as db
+from typing import Dict
 
 router = APIRouter(
     prefix="/carts",
@@ -84,16 +85,14 @@ def post_visits(visit_id: int, customers: list[Customer]):
 
     return "OK"
 
-global_cart_ids = 0
-global_cart = {}
-
+cart_ids: Dict[int, Dict[str, int]] = {}
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
+    cart_id = len(cart_ids) + 1
+    cart_ids[cart_id] = {}
 
-    global_cart_ids += 1
-
-    return {"cart_id": global_cart_ids}
+    return {"cart_id": cart_id}
 
 
 class CartItem(BaseModel):
@@ -103,8 +102,7 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
-    global_cart[global_cart_ids] = item_sku
-    # I want to buy a red a green or a blue
+    cart_ids[cart_id][item_sku] = cart_item.quantity
     return "OK"
 
 
@@ -114,13 +112,34 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
+    potionSum = 0
+    goldSum = 0
+
     with db.engine.begin() as connection:
         numGreenPotions = connection.execute(sqlalchemy.text("SELECT num_green_potions FROM global_inventory")).scalar()
+        numRedPotions = connection.execute(sqlalchemy.text("SELECT num_red_potions FROM global_inventory")).scalar()
+        numBluePotions = connection.execute(sqlalchemy.text("SELECT num_blue_potions FROM global_inventory")).scalar()
         currentGold = connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")).scalar()
-        numGreenPotions -= 1
-        currentGold += 50
-        with db.engine.begin() as connection:
-            connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_green_potions = {numGreenPotions}, gold = {currentGold}"))
 
-    return {"total_potions_bought": 1, "total_gold_paid": 50}
+    for Cart_id, in_dict in cart_ids.items():
+        if Cart_id == cart_id:
+            for sku, quantity in in_dict.items():
+                if (sku == "Green_Potion"):
+                    numGreenPotions -= 1
+                    goldSum += 50
+                    potionSum += 1
+                if (sku == "Red_Potion"):
+                    numRedPotions -= 1
+                    goldSum += 50
+                    potionSum += 1
+                if (sku == "Blue_Potion"):
+                    numBluePotions -= 1
+                    goldSum += 50
+                    potionSum += 1
+    
+    currentGold += goldSum
+    with db.engine.begin() as connection:
+        connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_green_potions = {numGreenPotions}, gold = {currentGold}, num_red_potions = {numRedPotions}, num_blue_potions = {numBluePotions}"))
+
+    return {"total_potions_bought": potionSum, "total_gold_paid": goldSum}
 
