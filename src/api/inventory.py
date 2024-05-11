@@ -14,18 +14,16 @@ router = APIRouter(
 @router.get("/audit")
 def get_inventory():
     """ """
-    totalPotions = 0
-    totalMl = 0
     with db.engine.begin() as connection:
-        currentGold = connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")).scalar()
+        curr_gold = connection.execute(sqlalchemy.text(
+            "SELECT COALESCE(SUM(quantity), 0) FROM ledger WHERE name = 'gold' ")).scalar()
+        tot_pots = connection.execute(sqlalchemy.text(
+            "SELECT COALESCE(SUM(quantity), 0) FROM ledger WHERE name LIKE '%Potion'")).scalar()
+        tot_ml = connection.execute(sqlalchemy.text(
+            "SELECT COALESCE(SUM(quantity), 0) FROM ledger WHERE name LIKE '%ml'")).scalar()
         
-        numPotions = connection.execute(sqlalchemy.text("SELECT quantity FROM potions"))
-        totalPotions = sum(quantity[0] for quantity in numPotions)
-       
-        numMl = connection.execute(sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml FROM global_inventory"))
-        totalMl = sum(numMl.fetchone())
-        
-    return {"number_of_potions": totalPotions, "ml_in_barrels": totalMl, "gold": currentGold}
+    return {"number_of_potions": tot_pots, "ml_in_barrels": tot_ml, "gold": curr_gold}
+
 
 # Gets called once a day
 @router.post("/plan")
@@ -34,10 +32,35 @@ def get_capacity_plan():
     Start with 1 capacity for 50 potions and 1 capacity for 10000 ml of potion. Each additional 
     capacity unit costs 1000 gold.
     """
+    pot_cap = 0
+    ml_cap = 0
+
+    with db.engine.begin() as connection:
+        curr_gold = connection.execute(sqlalchemy.text(
+            "SELECT COALESCE(SUM(quantity), 0) FROM ledger WHERE item = 'gold'")).scalar()
+        tot_pots = connection.execute(sqlalchemy.text(
+            "SELECT COALESCE(SUM(quantity), 0) FROM ledger WHERE item LIKE '%Potion'")).scalar()
+        tot_ml = connection.execute(sqlalchemy.text(
+            "SELECT COALESCE(SUM(quantity), 0) FROM ledger WHERE item LIKE '%ml'")).scalar()
+        curr_pot_cap = connection.execute(sqlalchemy.text(
+            "SELECT potion_cap FROM potions")).one()
+        curr_ml_cap = connection.execute(sqlalchemy.text(
+            "SELECT ml_cap FROM potions")).one()
+        
+        
+        # check if we almost reach potion capacity limit
+        if (tot_pots >= (curr_pot_cap * 0.9) and curr_gold >= 1000):
+            pot_cap += 1
+            curr_gold -= 1000
+        # check if we almost reach ml capacity limit
+        if (tot_ml >= (curr_ml_cap * 0.9) and curr_gold >= 1000):
+            ml_cap += 1
+            curr_gold -= 1000
+
 
     return {
-        "potion_capacity": 0,
-        "ml_capacity": 0
+        "potion_capacity": pot_cap,
+        "ml_capacity": ml_cap
         }
 
 class CapacityPurchase(BaseModel):
@@ -51,5 +74,12 @@ def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
     Start with 1 capacity for 50 potions and 1 capacity for 10000 ml of potion. Each additional 
     capacity unit costs 1000 gold.
     """
-
+    with db.engine.begin() as connection:
+        connection.execute(sqlalchemy.text(
+            "UPDATE potions SET potion_cap = potions.potion_cap + :new_pot_cap, ml_cap = potions.ml_cap + :new_ml_cap"),
+                           [{"new_pot_cap": capacity_purchase.potion_capacity * 50, "new_ml_cap": capacity_purchase.ml_capacity * 10000}])
+        connection.execute(sqlalchemy.text(
+            "INSERT INTO ledger (item, quantity) VALUES (:gold, :gold_spent)"),
+                [{"gold": 'gold', "gold_spent": (-1 * capacity_purchase.potion_capacity * 1000) + (capacity_purchase.ml_capacity * 1000 * -1)}])
+        
     return "OK"

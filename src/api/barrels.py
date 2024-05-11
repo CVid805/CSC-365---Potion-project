@@ -23,42 +23,17 @@ class Barrel(BaseModel):
 @router.post("/deliver/{order_id}")
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """ """
-    goldSpent = 0
-    greenMlGained = 0
-    redMlGained = 0
-    blueMlGained = 0
-    
-    
-    with db.engine.begin() as connection:
-        currentGold = connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")).scalar()
-        currentGreenMl = connection.execute(sqlalchemy.text("SELECT num_green_ml FROM global_inventory")).scalar()
-        currentRedMl = connection.execute(sqlalchemy.text("SELECT num_red_ml FROM global_inventory")).scalar()
-        currentBlueMl = connection.execute(sqlalchemy.text("SELECT num_blue_ml FROM global_inventory")).scalar()
-
-        for barrel in barrels_delivered :
-            if (barrel.potion_type == [1, 0, 0 , 0]):
-                redMlGained += barrel.ml_per_barrel * barrel.quantity
-                goldSpent += barrel.price * barrel.quantity
-            
-            if (barrel.potion_type == [0, 1, 0 , 0]):
-                greenMlGained += barrel.ml_per_barrel * barrel.quantity
-                goldSpent += barrel.price * barrel.quantity
-            
-            if (barrel.potion_type == [0, 0, 1 , 0]):
-                blueMlGained += barrel.ml_per_barrel * barrel.quantity
-                goldSpent += barrel.price * barrel.quantity
-            
-        currentGold -= goldSpent
-        currentGreenMl += greenMlGained
-        currentRedMl += redMlGained
-        currentBlueMl += blueMlGained
-
+    for barrel in barrels_delivered:
         with db.engine.begin() as connection:
-            connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET gold = {currentGold}, num_green_ml = {currentGreenMl},num_red_ml = {currentRedMl}, num_blue_ml = {currentBlueMl}"))
-    
+            connection.execute(sqlalchemy.text(
+                "INSERT INTO ledger (name, quantity) VALUES (:gold, :gold_spent), (:red_ml, :new_red_ml), (:green_ml, :new_green_ml), (:blue_ml, :new_blue_ml), (:dark_ml, :new_dark_ml)"),
+                        [{"gold": 'gold', "gold_spent": -1 * barrel.quantity * barrel.price, "red_ml": 'red_ml', "new_red_ml": barrel.quantity * barrel.ml_per_barrel * barrel.potion_type[0], "green_ml": 'green_ml', "new_green_ml": barrel.quantity * barrel.ml_per_barrel * barrel.potion_type[1], "blue_ml": 'blue_ml', "new_blue_ml": barrel.quantity * barrel.ml_per_barrel * barrel.potion_type[2], "dark_ml": 'dark_ml', "new_dark_ml": barrel.quantity * barrel.ml_per_barrel * barrel.potion_type[3]}])
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
     
     return "OK"
+
+
+
 
 # Gets called once a day
 @router.post("/plan")

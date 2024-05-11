@@ -12,13 +12,13 @@ Central Coast Cauldrons is the premier ecommerce site for all your alchemical de
 """
 
 app = FastAPI(
-    title="Central Coast Cauldrons",
+    title="'Los Potions Market",
     description=description,
     version="0.0.1",
-    terms_of_service="http://example.com/terms/",
+    terms_of_service="https://github.com/CVid805/CSC-365---Potion-project.git",
     contact={
-        "name": "Lucas Pierce",
-        "email": "lupierce@calpoly.edu",
+        "name": "Carlos Vidal",
+        "email": "cvidal@calpoly.edu",
     },
 )
 

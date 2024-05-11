@@ -56,19 +56,30 @@ def search_orders(
     time is 5 total line items.
     """
 
-    return {
-        "previous": "",
-        "next": "",
-        "results": [
-            {
-                "line_item_id": 1,
-                "item_sku": "1 oblivion potion",
-                "customer_name": "Scaramouche",
-                "line_item_total": 50,
-                "timestamp": "2021-01-01T00:00:00Z",
-            }
-        ],
-    }
+    results = []
+    with db.engine.begin() as connection:
+        query = connection.execute(sqlalchemy.text("""
+                                                    SELECT cart_items.line_item_id, cart_items.created_at AS timestamp, cart_items.quantity
+                                                    FROM cart_items
+                                                    JOIN carts on cart_items.cart_id = carts.cart_id
+                                                    JOIN potions on potions.name = cart_items.items
+                                                    JOIN customers on customers.cust_id = carts.cust_id
+                                                    WHERE cart_items.items = :sku AND customers.name = :name
+                                                    ORDER BY {} {}""".format(sort_col.value, sort_order.value)),
+                                                    [{"sku": potion_sku, "name": customer_name}])
+        for row in query:
+            results.append(
+                {
+                    "line_item_id": row["line_item_id"],
+                    "item_sku": row["item_sku"],
+                    "customer_name": row["customer_name"],
+                    "line_item_total": row["line_item_total"],
+                    "timestamp": row["timestamp"],
+                }
+            )
+
+
+    return results
 
 
 class Customer(BaseModel):

@@ -14,6 +14,27 @@ def get_catalog():
 
     catalog = []
     with db.engine.begin() as connection:
+        potions = connection.execute(sqlalchemy.text("""
+                                                     SELECT potions.name, potions.red, potions.green, potions.blue, potions.dark, potions.cost, COALESCE(SUM(ledger.quantity), 0) AS quantity
+                                                     FROM potions
+                                                     LEFT JOIN ledger ON potions.name = ledger.item
+                                                     WHERE potions.name LIKE '%Potion'
+                                                     GROUP BY potions.name
+                                                     ORDER BY quantity DESC LIMIT 6"""))
+        for name, red, green, blue, dark, cost, quantity in potions:
+            if (quantity != 0):
+                catalog.append({
+                    "sku": name,
+                    "name": name,
+                    "quantity": quantity,
+                    "price": cost,
+                    "potion_type": [red, green, blue, dark],
+                })
+
+    return catalog
+
+"""     
+    with db.engine.begin() as connection:
         numGreenPotions = connection.execute(sqlalchemy.text("SELECT quantity FROM potions WHERE name = 'Green'")).scalar()
         if numGreenPotions > 0:
             catalog.append({
@@ -42,9 +63,5 @@ def get_catalog():
                 "quantity": 1,
                 "price": 50,
                 "potion_type": [0, 0, 100, 0],
-            })
-
-
-    return catalog
-
-
+            }) 
+"""
