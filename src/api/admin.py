@@ -21,7 +21,7 @@ def reset():
         connection.execute(sqlalchemy.text("TRUNCATE ledger"))
         # set default values
         connection.execute(sqlalchemy.text("""
-                                            INSERT INTO ledger (name, quantity)
+                                            INSERT INTO ledger (item, quantity)
                                             VALUES ('gold', 100), ('red_ml', 0), ('green_ml', 0), ('blue_ml', 0),
                                                 ('dark_ml', 0), ('Red_Potion', 0), ('Green_Potion', 0),
                                                 ('Blue_Potion', 0), ('Dark_Potion', 0), ('Wocky_Slush_Potion', 0),

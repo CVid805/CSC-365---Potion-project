@@ -100,8 +100,11 @@ cart_ids: Dict[int, Dict[str, int]] = {}
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
-    cart_id = len(cart_ids) + 1
-    cart_ids[cart_id] = {}
+    with db.engine.begin() as connection:
+        cust_id = connection.execute(sqlalchemy.text("INSERT INTO customers (name, class, level) VALUES (:name, :class, :level) RETURNING cust_id"),
+                                         [{"name": new_cart.customer_name, "class": new_cart.character_class, "level": new_cart.level}]).scalar()
+        cart_id = connection.execute(sqlalchemy.text("INSERT INTO carts (cust_id) VALUES (:cust_id) RETURNING cart_id"),
+                                     [{"customer_id": cust_id}]).scalar()
 
     return {"cart_id": cart_id}
 
@@ -113,7 +116,10 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
-    cart_ids[cart_id][item_sku] = cart_item.quantity
+    with db.engine.begin() as connection:
+        connection.execute(sqlalchemy.text(
+            "INSERT INTO cart_items (cart_id, items, quantity) VALUES( :cart_id, :items, :quantity)"),
+                        [{"cart_id": cart_id, "items": item_sku, "quantity": cart_item.quantity}])
     return "OK"
 
 
@@ -127,30 +133,24 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     goldSum = 0
 
     with db.engine.begin() as connection:
-        numGreenPotions = connection.execute(sqlalchemy.text("SELECT quantity FROM potions WHERE name = 'Green'")).scalar()
-        numRedPotions = connection.execute(sqlalchemy.text("SELECT quantity FROM potions WHERE name = 'Red'")).scalar()
-        numBluePotions = connection.execute(sqlalchemy.text("SELECT quantity FROM potions WHERE name = 'Blue'")).scalar()
-        currentGold = connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")).scalar()
+        basket = connection.execute(sqlalchemy.text("""
+                                                    SELECT
+                                                    cart_items.cart_id as cart_items_id,
+                                                    cart_items.items,
+                                                    potions.cost,
+                                                    cart_items.quantity
+                                                    FROM cart_items
+                                                    JOIN carts on carts.cart_id = cart_items.cart_id
+                                                    JOIN potions on cart_items.items = potions.name
+                                                    WHERE cart_items.cart_id = :cart_id """),
+                                                   [{"cart_id": cart_id}])
+        for cart_items_id, items, quantity , cost in basket:
+            goldSum += (quantity * 50)
+            potionSum += quantity
+            connection.execute(sqlalchemy.text(
+                "INSERT INTO ledger (item, quantity) VALUES (:gold, :gold_gained), (:item, :quantity)"),
+                    [{"gold": 'gold', "gold_gained": quantity * cost, "item": items, "quantity": -1 * quantity}])
 
-    for Cart_id, in_dict in cart_ids.items():
-        if Cart_id == cart_id:
-            for sku, quantity in in_dict.items():
-                if (sku == "Green_Potion"):
-                    numGreenPotions -= 1
-                    goldSum += 50
-                    potionSum += 1
-                if (sku == "Red_Potion"):
-                    numRedPotions -= 1
-                    goldSum += 50
-                    potionSum += 1
-                if (sku == "Blue_Potion"):
-                    numBluePotions -= 1
-                    goldSum += 50
-                    potionSum += 1
-    
-    currentGold += goldSum
-    with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_green_potions = {numGreenPotions}, gold = {currentGold}, num_red_potions = {numRedPotions}, num_blue_potions = {numBluePotions}"))
-
+    print(cart_checkout.payment)
     return {"total_potions_bought": potionSum, "total_gold_paid": goldSum}
 
