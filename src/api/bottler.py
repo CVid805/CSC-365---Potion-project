@@ -71,7 +71,7 @@ def get_bottle_plan():
         total_potions = connection.execute(sqlalchemy.text(
             "SELECT COALESCE(SUM(quantity), 0) FROM ledger WHERE item LIKE '%Potion'")).scalar()
         caps = connection.execute(sqlalchemy.text(
-            "SELECT potion_cap FROM potions")).one()
+            "SELECT potion_cap FROM potions")).scalar()
         potion_cap = caps.potion_cap
         
         counter = 0

@@ -60,7 +60,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         total_ml = connection.execute(sqlalchemy.text(
             "SELECT COALESCE(SUM(quantity), 0) FROM ledger WHERE item LIKE '%ml' ")).scalar()
         curr_ml_cap = connection.execute(sqlalchemy.text(
-            "SELECT ml_cap FROM potions")).one()
+            "SELECT ml_cap FROM potions")).scalar()
         ml_cap = curr_ml_cap.ml_cap
 
         
