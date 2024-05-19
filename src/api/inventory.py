@@ -43,9 +43,9 @@ def get_capacity_plan():
         tot_ml = connection.execute(sqlalchemy.text(
             "SELECT COALESCE(SUM(quantity), 0) FROM ledger WHERE item LIKE '%ml'")).scalar()
         curr_pot_cap = connection.execute(sqlalchemy.text(
-            "SELECT potion_cap FROM potions")).one()
+            "SELECT potion_cap FROM potions")).scalar()
         curr_ml_cap = connection.execute(sqlalchemy.text(
-            "SELECT ml_cap FROM potions")).one()
+            "SELECT ml_cap FROM potions")).scalar()
         
         
         # check if we almost reach potion capacity limit
