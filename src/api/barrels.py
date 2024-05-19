@@ -41,6 +41,10 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
     print(wholesale_catalog)
     
+    curr_red_ml = 0
+    curr_green_ml = 0
+    curr_blue_ml = 0
+
     barrel_plan = []
     with db.engine.begin() as connection:
         curr_ml = connection.execute(sqlalchemy.text(
@@ -49,6 +53,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             "SELECT COALESCE(SUM(quantity), 0) FROM ledger WHERE item = 'gold' ")).scalar()
         ml_cap = connection.execute(sqlalchemy.text(
             "SELECT ml_cap FROM potions")).scalar()
+
+        ml_cap = int(ml_cap)
 
         # get quantity of each ml type
         for item, total in curr_ml:
@@ -67,7 +73,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         
         for barrel in wholesale_catalog:
             if barrel.potion_type == [0, 1, 0, 0] and (barrel.ml_per_barrel >= barrelsize or (curr_green_ml < 1000 and barrel.ml_per_barrel >= 500)):
-                cap = ml_cap/3 - curr_green_ml
+                cap = ml_cap // 3 - curr_green_ml
                 qty = int(cap // barrel.ml_per_barrel)
                 while barrel.price*qty > curr_gold and qty > 0:
                     qty -= 1
@@ -80,7 +86,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     curr_green_ml += barrel.ml_per_barrel * qty
 
             elif barrel.potion_type == [1, 0, 0, 0] and (barrel.ml_per_barrel >= barrelsize or (curr_red_ml < 1000 and barrel.ml_per_barrel >= 500)):
-                cap = ml_cap/3 - curr_red_ml
+                cap = ml_cap // 3 - curr_red_ml
                 qty = int(cap // barrel.ml_per_barrel)
                 while barrel.price*qty > curr_gold and qty > 0:
                     qty -= 1
@@ -93,7 +99,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     curr_gold += barrel.ml_per_barrel * qty
         
             elif barrel.potion_type == [0, 0, 1, 0] and (barrel.ml_per_barrel >= barrelsize or (curr_blue_ml < 1000 and barrel.ml_per_barrel >= 500)):
-                cap = ml_cap/3 - curr_blue_ml
+                cap = ml_cap // 3 - curr_blue_ml
                 qty = int(cap // barrel.ml_per_barrel)
                 while barrel.price*qty > curr_gold and qty > 0:
                     qty -= 1
