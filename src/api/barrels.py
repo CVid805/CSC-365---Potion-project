@@ -47,7 +47,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             "SELECT item, COALESCE(SUM(quantity), 0) AS total FROM ledger WHERE item LIKE '%ml' GROUP BY item"))
         curr_gold = connection.execute(sqlalchemy.text(
             "SELECT COALESCE(SUM(quantity), 0) FROM ledger WHERE item = 'gold' ")).scalar()
-        
+        ml_cap = connection.execute(sqlalchemy.text(
+            "SELECT ml_cap FROM potions")).scalar()
+
         # get quantity of each ml type
         for item, total in curr_ml:
             if 'red' in item:
@@ -57,13 +59,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             elif 'blue' in item:
                 curr_blue_ml = total
 
-        total_ml = connection.execute(sqlalchemy.text(
-            "SELECT COALESCE(SUM(quantity), 0) FROM ledger WHERE item LIKE '%ml' ")).scalar()
-        curr_ml_cap = connection.execute(sqlalchemy.text(
-            "SELECT ml_cap FROM potions")).scalar()
-        ml_cap = curr_ml_cap.ml_cap
-
-        
         barrelsize = 500
         if ml_cap >= 30000:
             barrelsize = 5000
