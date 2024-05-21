@@ -121,7 +121,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 })
 
             # don't care about dark barrels
-
+    print(f"barrel_plan: {barrel_plan}")
     return barrel_plan
 
 

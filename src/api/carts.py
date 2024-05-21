@@ -92,7 +92,11 @@ def post_visits(visit_id: int, customers: list[Customer]):
     """
     Which customers visited the shop today?
     """
-    print(customers)
+    with db.engine.begin() as connection:
+        for customer in customers:
+            connection.execute(sqlalchemy.text("INSERT INTO customers (name, class, level) VALUES (:name, :class, :level)"),
+                               [{"name": customer.customer_name, "class": customer.character_class, "level": customer.level}])
+    print(customers, visit_id)
 
     return "OK"
 
