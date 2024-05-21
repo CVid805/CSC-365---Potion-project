@@ -117,6 +117,7 @@ def get_bottle_plan():
                 "quantity": count
             })
 
+    print(bottlerPlan)
     return bottlerPlan
 
 if __name__ == "__main__":
