@@ -80,12 +80,12 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 cap = ml_cap // 3 - curr_red_ml
                 print("red cap: ", cap)
                 while (((curr_red_ml + barrel.ml_per_barrel) < cap) and 
-                       (curr_gold > barrel.price) and 
-                       (barrel_qty < barrel.quantity)):
+                       (curr_gold >= barrel.price) and 
+                       (barrel_qty <= barrel.quantity)):
                     barrel_qty += 1
                     curr_gold -= barrel.price
                     curr_red_ml += barrel.ml_per_barrel
-                print("red qty: ", barrel_qty)
+
                 barrel_plan.append({
                     "sku": barrel.sku,
                     "quantity": barrel_qty
@@ -96,12 +96,12 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 cap = ml_cap // 3 - curr_green_ml
                 print("green cap: ", cap)
                 while (((curr_green_ml + barrel.ml_per_barrel) < cap) and 
-                       (curr_gold > barrel.price) and 
-                       (barrel_qty < barrel.quantity)):
+                       (curr_gold >= barrel.price) and 
+                       (barrel_qty <= barrel.quantity)):
                     barrel_qty += 1
                     curr_gold -= barrel.price
                     curr_green_ml += barrel.ml_per_barrel
-                print("green qty: ", barrel_qty)
+
                 barrel_plan.append({
                     "sku": barrel.sku,
                     "quantity": barrel_qty
@@ -112,12 +112,12 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 cap = ml_cap // 3 - curr_blue_ml
                 print("blue cap: ", cap)
                 while (((curr_blue_ml + barrel.ml_per_barrel) < cap) and 
-                       (curr_gold > barrel.price) and 
-                       (barrel_qty < barrel.quantity)):
+                       (curr_gold >= barrel.price) and 
+                       (barrel_qty <= barrel.quantity)):
                     barrel_qty += 1
                     curr_gold -= barrel.price
                     curr_blue_ml += barrel.ml_per_barrel
-                print("blue qty: ", barrel_qty)
+
                 barrel_plan.append({
                     "sku": barrel.sku,
                     "quantity": barrel_qty
